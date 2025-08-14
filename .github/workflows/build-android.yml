@@ -5,14 +5,46 @@ on:
 jobs:
   build-android:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: true  # just in case the repo uses Git LFS for assets
+
+      # Java 17 is required by recent Android Gradle Plugins
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # Install Android SDK + accept licenses
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: 34
+          build-tools: '34.0.0'
+          ndk: '25.2.9519653'
+          accept-licenses: true
+
+      # Install Flutter
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
         with:
           channel: stable
-      - run: flutter --version
-      - run: flutter pub get
-      - run: flutter build apk --debug
+          cache: true
+
+      - name: Flutter doctor
+        run: flutter doctor -v
+
+      - name: Fetch packages
+        run: flutter pub get
+
+      # Build a debug APK (auto-signed, easiest to install)
+      - name: Build debug APK
+        run: flutter build apk --debug
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
